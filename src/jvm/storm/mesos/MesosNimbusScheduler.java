@@ -13,9 +13,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.log4j.Logger;
 
 public class MesosNimbusScheduler implements IScheduler {
+    public static final Logger LOG = Logger.getLogger(MesosNimbusScheduler.class);
 
+    
+    private Map<WorkerSlot, List<ExecutorDetails>> getSlotAllocations(SchedulerAssignment a) {
+        if(a==null) return new HashMap();
+        Map<ExecutorDetails, WorkerSlot> em =  a.getExecutorToSlot();
+        Map<WorkerSlot, List<ExecutorDetails>> ret = new HashMap();
+        for(ExecutorDetails e: em.keySet()) {
+            WorkerSlot s = em.get(e);
+            if(!ret.containsKey(s)) ret.put(s, new ArrayList());
+            ret.get(s).add(e);
+        }
+        return ret;
+    }
+    
     @Override
     public void schedule(Topologies topologies, Cluster cluster) {
         for(TopologyDetails details: topologies.getTopologies()) {
@@ -32,12 +47,19 @@ public class MesosNimbusScheduler implements IScheduler {
             if(!myAvailable.isEmpty()) {
                 SchedulerAssignment a = cluster.getAssignmentById(details.getId());
 
-                Set<WorkerSlot> usedSlots;
-                if(a==null) usedSlots = new HashSet<WorkerSlot>();
-                else usedSlots = new HashSet<WorkerSlot>(a.getExecutorToSlot().values()); 
-                if(usedSlots.size() < details.getNumWorkers() && myAvailable.size() > usedSlots.size()) {
-                    for(WorkerSlot s: usedSlots) {
-                        cluster.freeSlot(s);
+                Map<WorkerSlot, List<ExecutorDetails>> slotAllocations = getSlotAllocations(a);
+                
+                
+                int avg = details.getExecutors().size() / details.getNumWorkers();
+                
+                if(slotAllocations.size() < details.getNumWorkers() && myAvailable.size() > slotAllocations.size()) {
+                    for(WorkerSlot s: slotAllocations.keySet()) {
+                        //TODO: would be more precise to check the distribution.. can end up with unbalanced topology
+                        // this way if it shrinks and then grows to numWorkers
+                        int numE = slotAllocations.get(s).size();
+                        if(numE != avg && numE != avg + 1) {
+                            cluster.freeSlot(s);
+                        }
 
                         // can't do this because it may not be a recognized slot by mesos anymore
                         // myAvailable.add(s);
@@ -53,6 +75,7 @@ public class MesosNimbusScheduler implements IScheduler {
                 }
                 int i=0;
                 Map<String, List<ExecutorDetails>> toSchedule = cluster.getNeedsSchedulingComponentToExecutors(details);
+
                 for(String c: toSchedule.keySet()) {
                     List<ExecutorDetails> executors = toSchedule.get(c);
                     for(ExecutorDetails e: executors) {
