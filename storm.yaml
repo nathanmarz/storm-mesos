@@ -1,0 +1,9 @@
+java.library.path: "native:/Users/nathan/devtools/mesos-0.9.0/build/src/.libs"
+mesos.master.url: "local"
+mesos.executor.uri: "/globally/avaliable/location/of/distribution/storm-mesos-0.0.1-SNAPSHOT.tgz"
+storm.zookeeper.servers:
+    - "localhost"
+nimbus.host: "localhost"
+
+storm.local.dir: "storm-local"
+
