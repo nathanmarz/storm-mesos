@@ -13,9 +13,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
@@ -272,7 +274,13 @@ public class MesosNimbus implements INimbus {
     Map<String, Long> _firstTopologyTime = new HashMap<String, Long>();
     
     @Override
-    public Collection<WorkerSlot> availableSlots(Collection<SupervisorDetails> existingSupervisors, Collection<WorkerSlot> usedSlots, Topologies topologies) {
+    public Collection<WorkerSlot> availableSlots(Collection<SupervisorDetails> existingSupervisors, Collection<WorkerSlot> usedSlots, Topologies topologies, Collection<String> topologiesMissingAssignments) {
+        Set<String> topologiesMissingAssignmentsSet;
+        if(topologiesMissingAssignments==null) {
+            topologiesMissingAssignmentsSet = new HashSet();
+        } else {
+            topologiesMissingAssignmentsSet = new HashSet<String>(topologiesMissingAssignments);            
+        }
         Map<String, Integer> numExistingWorkers = new HashMap();
         for(TopologyDetails details: topologies.getTopologies()) {
             numExistingWorkers.put(details.getId(), 0);
@@ -285,7 +293,8 @@ public class MesosNimbus implements INimbus {
         List<TopologyDetails> needed = new ArrayList<TopologyDetails>();
         List<TopologyDetails> filled = new ArrayList<TopologyDetails>();
         for(TopologyDetails t: topologies.getTopologies()) {
-            if(numExistingWorkers.get(t.getId()) < t.getNumWorkers()) {
+            if(topologiesMissingAssignmentsSet.contains(t.getId()) ||
+                numExistingWorkers.get(t.getId()) < t.getNumWorkers()) {
                 needed.add(t);
             } else {
                 filled.add(t);
