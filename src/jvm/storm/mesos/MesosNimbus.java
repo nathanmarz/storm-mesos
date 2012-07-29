@@ -11,6 +11,7 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -60,6 +61,11 @@ public class MesosNimbus implements INimbus {
     @Override
     public IScheduler getForcedScheduler() {
         return new MesosNimbusScheduler();
+    }
+
+    @Override
+    public String getHostName(Map<String, SupervisorDetails> map, String nodeId) {
+        return getHostnameFromNodeId(nodeId);
     }
 
     public class NimbusScheduler implements Scheduler {
@@ -207,6 +213,11 @@ public class MesosNimbus implements INimbus {
         return nodeId.substring(i + NODE_ID_SEPARATOR.length());
     }
     
+    public static String getHostnameFromNodeId(String nodeId) {
+        int i = nodeId.indexOf(NODE_ID_SEPARATOR);
+        return nodeId.substring(0, i);
+    }
+    
     private static class OfferResources {
         int cpuSlots = 0;
         int memSlots = 0;
@@ -271,10 +282,24 @@ public class MesosNimbus implements INimbus {
             numExistingWorkers.put(topologyId, numExistingWorkers.get(topologyId) + 1);
         }
         
+        List<TopologyDetails> needed = new ArrayList<TopologyDetails>();
+        List<TopologyDetails> filled = new ArrayList<TopologyDetails>();
+        for(TopologyDetails t: topologies.getTopologies()) {
+            if(numExistingWorkers.get(t.getId()) < t.getNumWorkers()) {
+                needed.add(t);
+            } else {
+                filled.add(t);
+            }
+        }
+        Collections.shuffle(filled);
+        List<TopologyDetails> assignOrder = new ArrayList<TopologyDetails>();
+        assignOrder.addAll(needed);
+        assignOrder.addAll(filled);
+
+        
         LinkedList<String> desiredTopologySlots = new LinkedList();
-        for(TopologyDetails details: topologies.getTopologies()) {
-            int neededWorkers = details.getNumWorkers() - numExistingWorkers.get(details.getId());
-            for(int i=0; i<neededWorkers; i++) {
+        for(TopologyDetails details: assignOrder) {
+            for(int i=0; i<details.getNumWorkers(); i++) {
                 desiredTopologySlots.add(details.getId());
             }
         }
