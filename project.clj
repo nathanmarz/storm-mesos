@@ -3,7 +3,6 @@
   :source-path "src/clj"
   :java-source-path "src/jvm"
   :javac-options {:debug "true" :fork "true"}
-  :jvm-opts ["-Djava.library.path=/Users/nathan/devtools/mesos/build/src/.libs"]  
   :repositories {"releases" "http://artifactory.local.twitter.com/libs-releases-local"
                  "snapshots" "http://artifactory.local.twitter.com/libs-snapshots-local"}
   :dependencies [
