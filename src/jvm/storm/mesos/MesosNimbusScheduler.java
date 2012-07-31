@@ -52,6 +52,7 @@ public class MesosNimbusScheduler implements IScheduler {
                 
                 int avg = details.getExecutors().size() / details.getNumWorkers();
                 
+                int keptWorkers = slotAllocations.size();
                 if(slotAllocations.size() < details.getNumWorkers() && myAvailable.size() > slotAllocations.size()) {
                     for(WorkerSlot s: slotAllocations.keySet()) {
                         //TODO: would be more precise to check the distribution.. can end up with unbalanced topology
@@ -59,14 +60,17 @@ public class MesosNimbusScheduler implements IScheduler {
                         int numE = slotAllocations.get(s).size();
                         if(numE != avg && numE != avg + 1) {
                             cluster.freeSlot(s);
+                            keptWorkers--;
                         }
 
                         // can't do this because it may not be a recognized slot by mesos anymore
                         // myAvailable.add(s);
                     }
                 }
-                    //keep at most numWorkers
-                while(myAvailable.size() > details.getNumWorkers()) {
+                
+                
+                //keep at most numWorkers
+                while(myAvailable.size() > details.getNumWorkers() - keptWorkers) {
                     myAvailable.remove(myAvailable.size()-1);
                 }
                 Map<WorkerSlot, List<ExecutorDetails>> toAssign = new HashMap();
