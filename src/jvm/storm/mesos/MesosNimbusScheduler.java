@@ -7,12 +7,11 @@ import backtype.storm.scheduler.SchedulerAssignment;
 import backtype.storm.scheduler.Topologies;
 import backtype.storm.scheduler.TopologyDetails;
 import backtype.storm.scheduler.WorkerSlot;
+import backtype.storm.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.log4j.Logger;
 
 public class MesosNimbusScheduler implements IScheduler {
@@ -50,17 +49,20 @@ public class MesosNimbusScheduler implements IScheduler {
                 Map<WorkerSlot, List<ExecutorDetails>> slotAllocations = getSlotAllocations(a);
                 
                 
-                int avg = details.getExecutors().size() / details.getNumWorkers();
+                Map<Integer, Integer> distribution = new HashMap(Utils.integerDivided(details.getExecutors().size(), details.getNumWorkers()));                
                 
                 int keptWorkers = slotAllocations.size();
-                if(slotAllocations.size() < details.getNumWorkers() && myAvailable.size() > slotAllocations.size()) {
+                if(slotAllocations.size() != details.getNumWorkers() &&
+                        (myAvailable.size() > slotAllocations.size()
+                         || myAvailable.size() >= details.getNumWorkers())) {
                     for(WorkerSlot s: slotAllocations.keySet()) {
-                        //TODO: would be more precise to check the distribution.. can end up with unbalanced topology
-                        // this way if it shrinks and then grows to numWorkers
                         int numE = slotAllocations.get(s).size();
-                        if(numE != avg && numE != avg + 1) {
+                        Integer amt = distribution.get(numE);
+                        if(amt!=null && amt > 0) {
+                            distribution.put(numE, amt - 1);
+                        } else {
                             cluster.freeSlot(s);
-                            keptWorkers--;
+                            keptWorkers--;                            
                         }
 
                         // can't do this because it may not be a recognized slot by mesos anymore
@@ -70,7 +72,7 @@ public class MesosNimbusScheduler implements IScheduler {
                 
                 
                 //keep at most numWorkers
-                while(myAvailable.size() > details.getNumWorkers() - keptWorkers) {
+                while(myAvailable.size() > Math.max(1, details.getNumWorkers() - keptWorkers)) {
                     myAvailable.remove(myAvailable.size()-1);
                 }
                 Map<WorkerSlot, List<ExecutorDetails>> toAssign = new HashMap();
