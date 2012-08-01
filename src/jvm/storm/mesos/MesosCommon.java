@@ -15,7 +15,7 @@ public class MesosCommon {
     
     public static final int DEFAULT_CPU = 1;
     public static final int DEFAULT_MEM_MB = 1024;
-    public static final int DEFAULT_SUICIDE_TIMEOUT_SECS = 60;
+    public static final int DEFAULT_SUICIDE_TIMEOUT_SECS = 120;
     
     public static String taskId(String nodeid, int port) {
         return nodeid + "-" + port;
