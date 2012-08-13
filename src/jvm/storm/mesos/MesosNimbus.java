@@ -300,6 +300,9 @@ public class MesosNimbus implements INimbus {
                 filled.add(t);
             }
         }
+        for(TopologyDetails t: needed) {
+            LOG.debug("Topology needs slots: " + t.getId());        
+        }
         Collections.shuffle(needed);
         Collections.shuffle(filled);
         List<TopologyDetails> assignOrder = new ArrayList<TopologyDetails>();

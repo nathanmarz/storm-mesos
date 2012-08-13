@@ -70,6 +70,12 @@ public class MesosNimbusScheduler implements IScheduler {
                     }
                 }
                 
+                LOG.debug("Topology " + details.getId() + " scheduling summary: \n" +
+                           "Existing workers: " + slotAllocations.size() + "\n" + 
+                           "Available slots: " + myAvailable.size() + "\n" +
+                           "Kept workers: " + keptWorkers + "\n" +
+                           "Configured workers: " + details.getNumWorkers() + "\n");
+                
                 
                 //keep at most numWorkers
                 while(myAvailable.size() > Math.max(1, details.getNumWorkers() - keptWorkers)) {
