@@ -2,7 +2,10 @@ package storm.mesos;
 
 import backtype.storm.Config;
 import backtype.storm.scheduler.TopologyDetails;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
 
@@ -64,5 +67,13 @@ public class MesosCommon {
     public static int numWorkers(Map conf, TopologyDetails info) {
         conf = getFullTopologyConfig(conf, info);
         return((Number) conf.get(Config.TOPOLOGY_WORKERS)).intValue();
+    }
+    
+    public static List<String> getTopologyIds(Collection<TopologyDetails> details) {
+        List<String> ret = new ArrayList();
+        for(TopologyDetails d: details) {
+            ret.add(d.getId());
+        }
+        return ret;
     }
 }

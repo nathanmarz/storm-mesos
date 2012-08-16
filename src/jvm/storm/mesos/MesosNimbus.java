@@ -276,15 +276,19 @@ public class MesosNimbus implements INimbus {
     
     @Override
     public Collection<WorkerSlot> availableSlots(Collection<SupervisorDetails> existingSupervisors, Collection<WorkerSlot> usedSlots, Topologies topologies, Collection<String> topologiesMissingAssignments) {
-        synchronized(OFFERS_LOCK) {
-            LOG.info("Currently have " + _offers.size() + " offers buffered");
-        }
         Set<String> topologiesMissingAssignmentsSet;
         if(topologiesMissingAssignments==null) {
             topologiesMissingAssignmentsSet = new HashSet();
         } else {
             topologiesMissingAssignmentsSet = new HashSet<String>(topologiesMissingAssignments);            
         }
+        synchronized(OFFERS_LOCK) {
+            LOG.info("Currently have " + _offers.size() + " offers buffered");
+            if(!topologiesMissingAssignmentsSet.isEmpty()) {
+                LOG.info("Topologies that need assignments: " + topologiesMissingAssignmentsSet.toString());            
+            }
+        }
+        
         Map<String, Integer> numExistingWorkers = new HashMap();
         for(TopologyDetails details: topologies.getTopologies()) {
             numExistingWorkers.put(details.getId(), 0);
@@ -303,9 +307,6 @@ public class MesosNimbus implements INimbus {
             } else {
                 filled.add(t);
             }
-        }
-        for(TopologyDetails t: needed) {
-            LOG.debug("Topology needs slots: " + t.getId());        
         }
         Collections.shuffle(needed);
         Collections.shuffle(filled);
@@ -358,6 +359,7 @@ public class MesosNimbus implements INimbus {
                 retSlots.addAll(maybeSlots);
             }
         }
+        LOG.info("Number of available slots: " + retSlots.size());
         return retSlots;
     }
 

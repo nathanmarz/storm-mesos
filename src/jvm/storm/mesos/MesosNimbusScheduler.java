@@ -31,7 +31,8 @@ public class MesosNimbusScheduler implements IScheduler {
     }
     
     @Override
-    public void schedule(Topologies topologies, Cluster cluster) {
+    public void schedule(Topologies topologies, Cluster cluster) {        
+        LOG.info("Scheduling for " + MesosCommon.getTopologyIds(topologies.getTopologies()).toString());
         for(TopologyDetails details: topologies.getTopologies()) {
             List<WorkerSlot> availableSlots = cluster.getAvailableSlots();
             
@@ -43,10 +44,17 @@ public class MesosNimbusScheduler implements IScheduler {
                 }
             }
 
-            if(!myAvailable.isEmpty()) {
-                SchedulerAssignment a = cluster.getAssignmentById(details.getId());
+            SchedulerAssignment a = cluster.getAssignmentById(details.getId());
 
-                Map<WorkerSlot, List<ExecutorDetails>> slotAllocations = getSlotAllocations(a);
+            Map<WorkerSlot, List<ExecutorDetails>> slotAllocations = getSlotAllocations(a);
+
+            if(myAvailable.size() < details.getNumWorkers() && slotAllocations.size() < details.getNumWorkers()) {
+                LOG.info("Not enough slots available to fully assign " + details.getId());
+                LOG.info("Available slots for " + details.getId() + ": " + myAvailable.toString());
+                LOG.info("Curr slots for " + details.getId() + ": " + slotAllocations.toString());
+            }
+
+            if(!myAvailable.isEmpty()) {
                 
                 
                 Map<Integer, Integer> distribution = new HashMap(Utils.integerDivided(details.getExecutors().size(), details.getNumWorkers()));                
