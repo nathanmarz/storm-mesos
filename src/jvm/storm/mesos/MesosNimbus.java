@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
+import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.log4j.Logger;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.CommandInfo;
@@ -224,6 +225,11 @@ public class MesosNimbus implements INimbus {
         int cpuSlots = 0;
         int memSlots = 0;
         List<Integer> ports = new ArrayList<Integer>();
+
+        @Override
+        public String toString() {
+            return ToStringBuilder.reflectionToString(this);
+        }        
     }
     
     private OfferResources getResources(Offer offer, TopologyDetails info) {
@@ -255,6 +261,8 @@ public class MesosNimbus implements INimbus {
                 }
             }
         }
+        LOG.debug("Offer: " + offer.toString());
+        LOG.debug("Extracted resources: " + resources.toString());
         return resources;
     }
 
