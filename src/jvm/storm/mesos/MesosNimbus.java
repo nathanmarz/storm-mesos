@@ -276,7 +276,9 @@ public class MesosNimbus implements INimbus {
     
     @Override
     public Collection<WorkerSlot> availableSlots(Collection<SupervisorDetails> existingSupervisors, Collection<WorkerSlot> usedSlots, Topologies topologies, Collection<String> topologiesMissingAssignments) {
-        LOG.info("Currently have " + _offers.size() + " offers buffered");
+        synchronized(OFFERS_LOCK) {
+            LOG.info("Currently have " + _offers.size() + " offers buffered");
+        }
         Set<String> topologiesMissingAssignmentsSet;
         if(topologiesMissingAssignments==null) {
             topologiesMissingAssignmentsSet = new HashSet();
