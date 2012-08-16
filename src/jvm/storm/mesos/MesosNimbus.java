@@ -273,8 +273,10 @@ public class MesosNimbus implements INimbus {
     
     Map<String, Long> _firstTopologyTime = new HashMap<String, Long>();
     
+    
     @Override
     public Collection<WorkerSlot> availableSlots(Collection<SupervisorDetails> existingSupervisors, Collection<WorkerSlot> usedSlots, Topologies topologies, Collection<String> topologiesMissingAssignments) {
+        LOG.info("Currently have " + _offers.size() + " offers buffered");
         Set<String> topologiesMissingAssignmentsSet;
         if(topologiesMissingAssignments==null) {
             topologiesMissingAssignmentsSet = new HashSet();
