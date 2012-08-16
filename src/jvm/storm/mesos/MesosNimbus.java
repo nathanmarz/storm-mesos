@@ -251,7 +251,7 @@ public class MesosNimbus implements INimbus {
                     } else {
                         int start = (int) range.getBegin();
                         int end = (int) range.getEnd();
-                        for(int p=start; p<end; p++) {
+                        for(int p=start; p<=end; p++) {
                             resources.ports.add(p);
                             if(resources.ports.size()>=workers) {
                                 break;
