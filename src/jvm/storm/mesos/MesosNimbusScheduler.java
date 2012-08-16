@@ -50,6 +50,7 @@ public class MesosNimbusScheduler implements IScheduler {
 
             if(myAvailable.size() < details.getNumWorkers() && slotAllocations.size() < details.getNumWorkers()) {
                 LOG.info("Not enough slots available to fully assign " + details.getId());
+                LOG.info("Number of workers for " + details.getId() + ": " + details.getNumWorkers());                
                 LOG.info("Available slots for " + details.getId() + ": " + myAvailable.toString());
                 LOG.info("Curr slots for " + details.getId() + ": " + slotAllocations.toString());
             }

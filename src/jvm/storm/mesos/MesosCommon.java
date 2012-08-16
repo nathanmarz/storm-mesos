@@ -17,7 +17,7 @@ public class MesosCommon {
     public static final String SUICIDE_CONF = "mesos.supervisor.suicide.inactive.timeout.secs";
     
     public static final int DEFAULT_CPU = 1;
-    public static final int DEFAULT_MEM_MB = 1024;
+    public static final int DEFAULT_MEM_MB = 1000;
     public static final int DEFAULT_SUICIDE_TIMEOUT_SECS = 120;
     
     public static String taskId(String nodeid, int port) {
@@ -65,8 +65,7 @@ public class MesosCommon {
     }
     
     public static int numWorkers(Map conf, TopologyDetails info) {
-        conf = getFullTopologyConfig(conf, info);
-        return((Number) conf.get(Config.TOPOLOGY_WORKERS)).intValue();
+        return info.getNumWorkers();
     }
     
     public static List<String> getTopologyIds(Collection<TopologyDetails> details) {
