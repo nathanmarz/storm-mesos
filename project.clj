@@ -9,6 +9,6 @@
 [org.apache.mesos/mesos "0.9.0-120"] ;; TODO: needs to be made public
 ]
   :dev-dependencies [
-[storm "0.8.2-wip13"]
+[storm "0.8.2-wip14"]
 [org.clojure/clojure "1.4.0"]
 ])
