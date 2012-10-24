@@ -1,6 +1,5 @@
 package storm.mesos;
 
-import backtype.storm.Config;
 import backtype.storm.scheduler.TopologyDetails;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,6 +18,9 @@ public class MesosCommon {
     public static final int DEFAULT_CPU = 1;
     public static final int DEFAULT_MEM_MB = 1000;
     public static final int DEFAULT_SUICIDE_TIMEOUT_SECS = 120;
+    
+    public static final String SUPERVISOR_ID = "supervisorid";
+    public static final String ASSIGNMENT_ID = "assignmentid";
     
     public static String taskId(String nodeid, int port) {
         return nodeid + "-" + port;

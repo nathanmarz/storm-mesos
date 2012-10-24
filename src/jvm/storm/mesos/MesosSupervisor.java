@@ -21,11 +21,13 @@ import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskState;
 import org.apache.mesos.Protos.TaskStatus;
+import org.json.simple.JSONValue;
 
 public class MesosSupervisor implements ISupervisor {
     public static final Logger LOG = Logger.getLogger(MesosSupervisor.class);
     
     volatile String _id = null;
+    volatile String _assignmentId = null;
     volatile ExecutorDriver _driver;   
     StormExecutor _executor;
     LocalState _state;
@@ -48,8 +50,11 @@ public class MesosSupervisor implements ISupervisor {
 
         @Override
         public void registered(ExecutorDriver driver, ExecutorInfo executorInfo, FrameworkInfo frameworkInfo, SlaveInfo slaveInfo) {
-            _id = executorInfo.getData().toStringUtf8();
-            LOG.info("Registered supervisor with Mesos: " + _id);
+            LOG.info("Received executor data <" + executorInfo.getData().toStringUtf8() + ">");
+            Map ids = (Map) JSONValue.parse(executorInfo.getData().toStringUtf8());
+            _id = (String) ids.get(MesosCommon.SUPERVISOR_ID);
+            _assignmentId = (String) ids.get(MesosCommon.ASSIGNMENT_ID);
+            LOG.info("Registered supervisor with Mesos: " + _id + ", " + _assignmentId);
             initter.release();
         }
         
@@ -167,8 +172,13 @@ public class MesosSupervisor implements ISupervisor {
     }
 
     @Override
-    public String getId() {
+    public String getSupervisorId() {
         return _id;
+    }
+    
+    @Override
+    public String getAssignmentId() {
+        return _assignmentId;
     }
 
     @Override
