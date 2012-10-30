@@ -293,6 +293,8 @@ public class MesosNimbus implements INimbus {
         
         Integer cpu = null;
         Integer mem = null;
+        // TODO: maybe this isn't the best approach. if a topology raises #cpus keeps failing,
+        // it will mess up scheduling on this cluster permanently 
         for(String id: topologiesMissingAssignments) {
             TopologyDetails details = topologies.getById(id);
             int tcpu = MesosCommon.topologyCpu(_conf, details);
@@ -304,6 +306,8 @@ public class MesosNimbus implements INimbus {
                 mem = tmem;
             }
         }
+        
+        // need access to how many slots are currently used to limit number of slots taken up
         
         List<WorkerSlot> allSlots = new ArrayList();
         
