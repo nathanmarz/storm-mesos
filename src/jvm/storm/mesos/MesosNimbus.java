@@ -172,7 +172,7 @@ public class MesosNimbus implements INimbus {
             Semaphore initter = new Semaphore(0);
             _scheduler = new NimbusScheduler(initter);
             Number failoverTimeout = (Number) conf.get(CONF_MASTER_FAILOVER_TIMEOUT_SECS);
-            if(failoverTimeout==null) failoverTimeout = 30;
+            if(failoverTimeout==null) failoverTimeout = 3600;
             
             FrameworkInfo.Builder finfo = FrameworkInfo.newBuilder()
                                     .setName("Storm-0.8.0")
