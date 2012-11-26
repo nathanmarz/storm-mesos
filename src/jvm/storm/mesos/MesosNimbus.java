@@ -47,6 +47,8 @@ public class MesosNimbus implements INimbus {
     public static final String CONF_EXECUTOR_URI = "mesos.executor.uri";
     public static final String CONF_MASTER_URL = "mesos.master.url";
     public static final String CONF_MASTER_FAILOVER_TIMEOUT_SECS = "mesos.master.failover.timeout.secs";
+    public static final String CONF_MESOS_ALLOWED_HOSTS = "mesos.allowed.hosts";
+    public static final String CONF_MESOS_DISALLOWED_HOSTS = "mesos.disallowed.hosts";
     
     public static final Logger LOG = Logger.getLogger(MesosNimbus.class);
 
@@ -282,6 +284,16 @@ public class MesosNimbus implements INimbus {
     
     Map<String, Long> _firstTopologyTime = new HashMap<String, Long>();
     
+    public boolean isHostAccepted(String hostname) {
+        List<String> allowedHosts = (List<String>)_conf.get(CONF_MESOS_ALLOWED_HOSTS);
+        if(allowedHosts != null && !allowedHosts.contains(hostname)) return false;
+        
+        List<String> disallowedHosts = (List<String>)_conf.get(CONF_MESOS_DISALLOWED_HOSTS);
+        if(disallowedHosts != null && disallowedHosts.contains(hostname)) return false;
+        
+        return true;
+    }
+    
     @Override
     public Collection<WorkerSlot> allSlotsAvailableForScheduling(Collection<SupervisorDetails> existingSupervisors, Topologies topologies, Set<String> topologiesMissingAssignments) {
         synchronized(OFFERS_LOCK) {
@@ -310,12 +322,13 @@ public class MesosNimbus implements INimbus {
         // need access to how many slots are currently used to limit number of slots taken up
         
         List<WorkerSlot> allSlots = new ArrayList();
-        
-        
+
         if(cpu!=null && mem!=null) {
             synchronized(OFFERS_LOCK) {
                 for(Offer offer: _offers.values()) {
-                    allSlots.addAll(toSlots(offer, cpu, mem));
+                    if(isHostAccepted(offer.getHostname())) {
+                        allSlots.addAll(toSlots(offer, cpu, mem));
+                    }
                 }
             }
         }
