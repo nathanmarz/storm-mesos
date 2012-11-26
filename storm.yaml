@@ -7,3 +7,7 @@ nimbus.host: "localhost"
 
 storm.local.dir: "storm-local"
 
+#mesos.allowed.hosts:
+#  - host1
+#mesos.disallowed.hosts:
+#  - host1
