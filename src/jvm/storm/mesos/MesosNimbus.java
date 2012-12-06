@@ -117,7 +117,11 @@ public class MesosNimbus implements INimbus {
         public void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
             synchronized(OFFERS_LOCK) {
                 for(Offer offer: offers) {
-                    _offers.put(offer.getId(), offer);
+                    if(isHostAccepted(offer.getHostname())) {
+                        _offers.put(offer.getId(), offer);
+                    } else {
+                        driver.declineOffer(offer.getId());
+                    }
                 }
             }
         }
@@ -305,9 +309,7 @@ public class MesosNimbus implements INimbus {
         if(cpu!=null && mem!=null) {
             synchronized(OFFERS_LOCK) {
                 for(Offer offer: _offers.values()) {
-                    if(isHostAccepted(offer.getHostname())) {
-                        allSlots.addAll(toSlots(offer, cpu, mem));
-                    }
+                    allSlots.addAll(toSlots(offer, cpu, mem));
                 }
             }
         }
