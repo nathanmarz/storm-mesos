@@ -199,26 +199,7 @@ public class MesosNimbus implements INimbus {
             throw new RuntimeException(e);            
         }
     }
-    
-    private static final String NODE_ID_SEPARATOR = "$$$$$";
-    
-    public static String toNodeId(String hostname, TopologyDetails details) {
-        if(hostname.endsWith("$") || hostname.contains(NODE_ID_SEPARATOR)) {
-            throw new RuntimeException("Cannot assign node id for hostname " + hostname);
-        }
-        return hostname + NODE_ID_SEPARATOR + details.getId();
-    }
-    
-    public static String getTopologyIdFromNodeId(String nodeId) {
-        int i = nodeId.indexOf(NODE_ID_SEPARATOR);
-        return nodeId.substring(i + NODE_ID_SEPARATOR.length());
-    }
-    
-    public static String getHostnameFromNodeId(String nodeId) {
-        int i = nodeId.indexOf(NODE_ID_SEPARATOR);
-        return nodeId.substring(0, i);
-    }
-    
+        
     private static class OfferResources {
         int cpuSlots = 0;
         int memSlots = 0;
