@@ -190,7 +190,7 @@ public class MesosSupervisor implements ISupervisor {
         }
         TaskStatus status = TaskStatus.newBuilder()
                 .setState(TaskState.TASK_FINISHED)
-                .setTaskId(TaskID.newBuilder().setValue(MesosCommon.taskId(_id, port)))
+                .setTaskId(TaskID.newBuilder().setValue(MesosCommon.taskId(_assignmentId, port)))
                 .build();
         _driver.sendStatusUpdate(status);
     }
