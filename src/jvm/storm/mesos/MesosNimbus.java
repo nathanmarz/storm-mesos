@@ -7,6 +7,7 @@ import backtype.storm.scheduler.Topologies;
 import backtype.storm.scheduler.TopologyDetails;
 import backtype.storm.scheduler.WorkerSlot;
 import backtype.storm.utils.LocalState;
+import clojure.lang.RT;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.*;
@@ -37,7 +38,8 @@ import org.apache.mesos.SchedulerDriver;
 import org.json.simple.JSONValue;
 
 public class MesosNimbus implements INimbus {
-    public static final String CONF_EXECUTOR_URI = "mesos.executor.uri";
+    public static final String CONF_EXECUTOR_URI_DEFAULT = "mesos.executor.uri.default";
+    public static final String CONF_EXECUTOR_URI_OVERRIDES = "mesos.executor.uri.overrides";
     public static final String CONF_MASTER_URL = "mesos.master.url";
     public static final String CONF_MASTER_FAILOVER_TIMEOUT_SECS = "mesos.master.failover.timeout.secs";
     public static final String CONF_MESOS_ALLOWED_HOSTS = "mesos.allowed.hosts";
@@ -49,10 +51,11 @@ public class MesosNimbus implements INimbus {
     private final Object OFFERS_LOCK = new Object();
     private RotatingMap<OfferID, Offer> _offers;
     
-    LocalState _state;
+    LocalState _localState;
     NimbusScheduler _scheduler;
     volatile SchedulerDriver _driver;
     Timer _timer = new Timer();
+    IMesosNimbusStateHelper _zkState;
 
     @Override
     public IScheduler getForcedScheduler() {
@@ -76,7 +79,7 @@ public class MesosNimbus implements INimbus {
         public void registered(final SchedulerDriver driver, FrameworkID id, MasterInfo masterInfo) {
             _driver = driver;
             try {
-                _state.put(FRAMEWORK_ID, id.getValue());
+                _localState.put(FRAMEWORK_ID, id.getValue());
             } catch (IOException e) {
                 LOG.error("Halting process...", e);
                 Runtime.getRuntime().halt(1);                
@@ -161,19 +164,26 @@ public class MesosNimbus implements INimbus {
     Map _conf;            
     Set<String> _allowedHosts;
     Set<String> _disallowedHosts;
+
     
     private static Set listIntoSet(List l) {
         if(l == null) { return null; }
         else return new HashSet(l);
     }
-    
+
     @Override
-    public void prepare(Map conf, String localDir) {
+    public void prepare(Map conf, String localDir, Object clusterState) {
         try {
             _conf = conf;
-            _state = new LocalState(localDir);        
-            String id = (String) _state.get(FRAMEWORK_ID);
-            
+            _localState = new LocalState(localDir);
+            String id = (String) _localState.get(FRAMEWORK_ID);
+
+            RT.loadResourceScript("storm/mesos/state.clj");
+            // gen-class features don't work here because javac happens before before clojure compile.
+            _zkState = (IMesosNimbusStateHelper)RT.var("storm.mesos.state", "mk-mesos-nimbus-state-helper")
+                                            .invoke(_conf, clusterState);
+            _zkState.init(_conf);
+
             _allowedHosts = listIntoSet((List)_conf.get(CONF_MESOS_ALLOWED_HOSTS));
             _disallowedHosts = listIntoSet((List)_conf.get(CONF_MESOS_DISALLOWED_HOSTS));
 
@@ -356,7 +366,7 @@ public class MesosNimbus implements INimbus {
                         Map executorData = new HashMap();
                         executorData.put(MesosCommon.SUPERVISOR_ID, slot.getNodeId() + "-" + details.getId());
                         executorData.put(MesosCommon.ASSIGNMENT_ID, slot.getNodeId());
-                        
+
                         String executorDataStr = JSONValue.toJSONString(executorData);
                         LOG.info("Launching task with executor data: <" + executorDataStr + ">");
                         TaskInfo task = TaskInfo.newBuilder()
@@ -365,27 +375,27 @@ public class MesosNimbus implements INimbus {
                                 .setValue(MesosCommon.taskId(slot.getNodeId(), slot.getPort())))
                             .setSlaveId(offer.getSlaveId())
                             .setExecutor(ExecutorInfo.newBuilder()
-                                .setExecutorId(ExecutorID.newBuilder().setValue(details.getId()))
-                                .setData(ByteString.copyFromUtf8(executorDataStr))
-                                .setCommand(CommandInfo.newBuilder()
-                                    .addUris(URI.newBuilder().setValue((String) _conf.get(CONF_EXECUTOR_URI)))
-                                    .setValue("cd storm-mesos* && python bin/storm-mesos supervisor")
-                            ))
+                                    .setExecutorId(ExecutorID.newBuilder().setValue(details.getId()))
+                                    .setData(ByteString.copyFromUtf8(executorDataStr))
+                                    .setCommand(CommandInfo.newBuilder()
+                                            .addUris(URI.newBuilder().setValue(_zkState.getExecutorURI(details)))
+                                            .setValue("cd storm-mesos* && python bin/storm-mesos supervisor")
+                                    ))
                             .addResources(Resource.newBuilder()
-                                .setName("cpus")
-                                .setType(Type.SCALAR)
-                                .setScalar(Scalar.newBuilder().setValue(cpu)))
+                                    .setName("cpus")
+                                    .setType(Type.SCALAR)
+                                    .setScalar(Scalar.newBuilder().setValue(cpu)))
                             .addResources(Resource.newBuilder()
-                                .setName("mem")
-                                .setType(Type.SCALAR)
-                                .setScalar(Scalar.newBuilder().setValue(mem)))
+                                    .setName("mem")
+                                    .setType(Type.SCALAR)
+                                    .setScalar(Scalar.newBuilder().setValue(mem)))
                             .addResources(Resource.newBuilder()
-                                .setName("ports")
-                                .setType(Type.RANGES)
-                                .setRanges(Ranges.newBuilder()
-                                    .addRange(Range.newBuilder()
-                                        .setBegin(slot.getPort())
-                                        .setEnd(slot.getPort()))))
+                                    .setName("ports")
+                                    .setType(Type.RANGES)
+                                    .setRanges(Ranges.newBuilder()
+                                            .addRange(Range.newBuilder()
+                                                    .setBegin(slot.getPort())
+                                                    .setEnd(slot.getPort()))))
                             .build();
                         toLaunch.get(id).add(task);
                     }
